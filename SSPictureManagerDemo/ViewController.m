@@ -14,7 +14,7 @@
 #define SScreenWidth [UIScreen mainScreen].bounds.size.width
 #define SScreenHeight [UIScreen mainScreen].bounds.size.height
 
-@interface ViewController ()
+@interface ViewController ()<UITextViewDelegate>
 {
     SSPictureManagerView *_pictureManagerView;
     NSMutableArray *_sourceImages;
@@ -26,16 +26,30 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    UITextView *textV = [[UITextView alloc] init];
+    textV.layer.borderWidth = .5;
+    textV.delegate = self;
+    textV.layer.borderColor = [UIColor grayColor].CGColor;
+    [self.view addSubview:textV];
+    [textV mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.offset(100);
+        make.left.offset(20);
+        make.right.offset(-20);
+        make.height.offset(100);
+    }];
+    
     _sourceImages = [[NSMutableArray alloc] init];
     [self deleteView];
     //搭建图片管理视图
-    SSPictureManagerView *pictureVC = [[SSPictureManagerView alloc] initWithFrame:CGRectMake(0, 100, SScreenWidth, SScreenHeight-100)];
-    pictureVC.maxCount = 16;
-    pictureVC.columnSpace = 10;
-    pictureVC.rowSpace = 15;
+    SSPictureManagerView *pictureVC = [[SSPictureManagerView alloc] init];
+    pictureVC.layer.borderWidth = .5;
+    pictureVC.layer.borderColor = [UIColor grayColor].CGColor;
+    pictureVC.maxCount = 9;
+    pictureVC.column = 3;
+    pictureVC.columnSpace = 5;
+    pictureVC.rowSpace = 5;
     pictureVC.duration = .35;
     _pictureManagerView = pictureVC;
-    [pictureVC.addButton addTarget:self action:@selector(clickAction:) forControlEvents:UIControlEventTouchUpInside];
     pictureVC.selectCompletion = ^BOOL(UIImageView *imageView, CGPoint currentPoint) {
         if (currentPoint.y >=SScreenHeight-100) {
             [_sourceImages removeAllObjects];
@@ -54,10 +68,13 @@
     };
     [self.view addSubview:pictureVC];
     [pictureVC mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.right.offset(0);
-        make.top.offset(100);
-        make.bottom.offset(0);
+        make.left.offset(20);
+        make.right.offset(-20);
+        make.top.equalTo(textV.mas_bottom).offset(20);
+        make.height.offset(100);
     }];
+    [pictureVC prepareForLoad];
+    [pictureVC.addButton addTarget:self action:@selector(clickAction:) forControlEvents:UIControlEventTouchUpInside];
 }
 
 //加载删除按钮
@@ -96,6 +113,16 @@
     [UIView animateWithDuration:.35 animations:^{
         _deleteLabel.frame = rect;
     }];
+}
+
+
+-(BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text
+{
+    if ([text isEqualToString:@"\n"]) {
+        [textView resignFirstResponder];
+        return NO;
+    }
+    return YES;
 }
 
 

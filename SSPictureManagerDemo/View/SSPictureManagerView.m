@@ -43,16 +43,21 @@ static NSString *_imageIndexKey = @"imageIndexKey";
         _currentImageViews = [[NSMutableArray alloc] init];
         _currentImages = [[NSMutableArray alloc] init];
         _duration = .5;
-         [self initAddButton];
+        
     }
     return self;
+}
+
+//预加载
+- (void)prepareForLoad{
+    [self initAddButton];
 }
 
 #pragma mrak - 搭建视图
 - (void)initContentView:(NSArray *)images{
     NSInteger row = 0;// i/count;
     NSInteger column = 0;  //i%count;
-    CGFloat imageWidth = (self.bounds.size.width - _columnSpace)/_column;
+    CGFloat imageWidth = (self.bounds.size.width-((_column-1)*_columnSpace))/_column;
     CGFloat imageHeight = (self.bounds.size.width - _rowSpace)/_column;
 
     for (NSUInteger i = _currentIndex; i < images.count; i++) {
@@ -64,7 +69,7 @@ static NSString *_imageIndexKey = @"imageIndexKey";
         _currentIndex ++;
         
         //imageview
-        UIImageView *imagev = [[UIImageView alloc] initWithFrame:CGRectMake(_columnSpace+column*imageWidth, row*imageHeight, imageWidth-_columnSpace, imageHeight-_rowSpace)];
+        UIImageView *imagev = [[UIImageView alloc] initWithFrame:CGRectMake(column*(imageWidth+_columnSpace), row*imageHeight, imageWidth, imageHeight-_rowSpace)];
         UIImage *image = _currentImages[i];
         [image bindValue:@"i" forKey:_imageIndexKey];
         imagev.image = image;
@@ -84,13 +89,16 @@ static NSString *_imageIndexKey = @"imageIndexKey";
 
 //添加图片按钮
 -(void)initAddButton{
-    CGFloat imageWidth = (self.bounds.size.width - _columnSpace)/_column;
-    UIButton *addbt = [[UIButton alloc] initWithFrame:CGRectMake(10, 0, imageWidth, imageWidth)];
+    [self layoutIfNeeded];
+    CGFloat imageWidth = (self.bounds.size.width-((_column-1)*_columnSpace))/_column;
+    CGFloat imageHeight = (self.bounds.size.width - _rowSpace)/_column;
+    UIButton *addbt = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, imageWidth, imageHeight-_rowSpace)];
     addbt.backgroundColor = [UIColor colorWithWhite:0 alpha:.1];
     [addbt setImage:[UIImage imageNamed:@"addImage@2x.png"] forState:UIControlStateNormal];
     addbt.imageView.contentMode = UIViewContentModeScaleToFill;
     _addButton = addbt;
     [self addSubview:addbt];
+    [self updateViewHeight];
 }
 
 #pragma mark - 手势触动的方法
@@ -99,6 +107,7 @@ static NSString *_imageIndexKey = @"imageIndexKey";
     UIImageView *imageV = (UIImageView *)sender.view;
     //长按以后添加平移手势
     if (sender.state == UIGestureRecognizerStateBegan) {
+        [self bringSubviewToFront:imageV];
         _currentTag = imageV.tag;
         _startPoint = [sender locationInView:imageV];
         _imagePoint = imageV.center;
@@ -204,20 +213,16 @@ static NSString *_imageIndexKey = @"imageIndexKey";
 #pragma 更新frame
 //跟新self的高度
 - (void)updateViewHeight{
-    CGFloat imageHeight = (self.bounds.size.width - _rowSpace)/_column;
-    //行
-    NSUInteger row = _currentImageViews.count/_column;
+//    CGFloat imageHeight = (self.bounds.size.width - _rowSpace)/_column;
+//    //行
+//    NSUInteger row = _currentImageViews.count/_column;
     // 更新一下高度
     if (_autoLayout) {
         [self mas_updateConstraints:^(MASConstraintMaker *make) {
-            make.height.equalTo(@(imageHeight*(row+1)+self->_rowSpace*(row)));
+            make.height.equalTo(@(_addButton.frame.origin.y+_addButton.frame.size.height));
         }];
     }else{
-        if (_currentImageViews.count == _maxCount) {
-              self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.bounds.size.width, _addButton.frame.origin.y+_addButton.frame.size.height);
-        }else{
-            self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.bounds.size.width, _addButton.frame.origin.y+_addButton.frame.size.height);
-        }
+        self.frame = CGRectMake(self.frame.origin.x, self.frame.origin.y, self.bounds.size.width, _addButton.frame.origin.y+_addButton.frame.size.height);
     }
 }
 
@@ -227,13 +232,13 @@ static NSString *_imageIndexKey = @"imageIndexKey";
     NSUInteger row = (_currentImageViews.count)/_column;
     //列
     NSUInteger column = (_currentImageViews.count)%_column;
-    CGFloat imageWidth = (self.bounds.size.width - _columnSpace)/_column;
+    CGFloat imageWidth = (self.bounds.size.width-((_column-1)*_columnSpace))/_column;
     CGFloat imageHeight = (self.bounds.size.width - _rowSpace)/_column;
     if (_currentImageViews.count == _maxCount) {
         UIImageView *imagev = _currentImageViews[_currentImageViews.count-1];
         _addButton.frame =imagev.frame;
     }else{
-        _addButton.frame = CGRectMake(_columnSpace+column*imageWidth, row*imageHeight, imageWidth-_columnSpace, imageHeight-_rowSpace);
+        _addButton.frame = CGRectMake(column*(imageWidth+_columnSpace), row*imageHeight, imageWidth, imageHeight-_rowSpace);
     }
     if (_currentImageViews.count == _maxCount) {
         _addButton.hidden = YES;

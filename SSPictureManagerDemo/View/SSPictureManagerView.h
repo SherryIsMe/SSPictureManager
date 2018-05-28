@@ -66,6 +66,9 @@
  */
 - (void)deleteImageView:(UIImageView *)imageView;
 
-
+/**
+ 预加载
+ */
+- (void)prepareForLoad;
 
 @end
